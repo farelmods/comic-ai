@@ -1,0 +1,507 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KOMIK-BOT AI | Asisten Virtual</title>
+    
+    <!-- Google Fonts: Bangers & Comic Neue -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome untuk Ikon -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        /* --- Variabel CSS --- */
+        :root {
+            --primary-color: #FFD93D;
+            --secondary-color: #FF6B6B;
+            --accent-color: #4D96FF;
+            --dark-color: #2C2C54;
+            --light-color: #FFFFFF;
+            --bg-pattern: #f4f4f4;
+            
+            --font-heading: 'Bangers', cursive;
+            --font-body: 'Comic Neue', cursive;
+            
+            --border-thick: 3px solid var(--dark-color);
+            --shadow-hard: 4px 4px 0px var(--dark-color);
+            --shadow-hover: 6px 6px 0px var(--dark-color);
+        }
+
+        /* --- Reset & Base Styles --- */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: var(--font-body);
+            background-color: var(--bg-pattern);
+            color: var(--dark-color);
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            background-image: radial-gradient(var(--dark-color) 1px, transparent 1px);
+            background-size: 20px 20px;
+            overflow: hidden;
+        }
+
+        h1, h2, h3 {
+            font-family: var(--font-heading);
+            letter-spacing: 1.5px;
+        }
+
+        /* --- Header Chat --- */
+        header {
+            background-color: var(--light-color);
+            border-bottom: var(--border-thick);
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: 0 4px 0px rgba(0,0,0,0.1);
+            z-index: 10;
+            flex-shrink: 0; /* Mencegah header mengecil */
+        }
+
+        .bot-profile {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .bot-avatar {
+            width: 60px;
+            height: 60px;
+            background-color: var(--accent-color);
+            border: var(--border-thick);
+            border-radius: 50%;
+            overflow: hidden;
+            position: relative;
+        }
+
+        .bot-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .status-indicator {
+            position: absolute;
+            bottom: 2px;
+            right: 2px;
+            width: 15px;
+            height: 15px;
+            background-color: #2ecc71;
+            border: 2px solid var(--dark-color);
+            border-radius: 50%;
+        }
+
+        .bot-info h1 {
+            font-size: 1.8rem;
+            color: var(--dark-color);
+            margin: 0;
+            text-shadow: 2px 2px 0px var(--primary-color);
+            line-height: 1;
+        }
+
+        .bot-info p {
+            font-size: 1rem;
+            font-weight: 700;
+            color: var(--secondary-color);
+        }
+
+        .header-actions button {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: var(--dark-color);
+            transition: transform 0.2s;
+            margin-left: 10px;
+        }
+
+        .header-actions button:hover {
+            transform: scale(1.1);
+            color: var(--secondary-color);
+        }
+
+        /* --- Area Chat Utama --- */
+        #chat-container {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+            /* Pastikan container bisa di-scroll */
+            min-height: 0; 
+        }
+
+        /* Scrollbar kustom */
+        #chat-container::-webkit-scrollbar {
+            width: 12px;
+        }
+        #chat-container::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        #chat-container::-webkit-scrollbar-thumb {
+            background: var(--dark-color);
+            border: 2px solid var(--bg-pattern);
+            border-radius: 10px;
+        }
+
+        /* Pesan (Bubble) */
+        .message {
+            max-width: 80%;
+            display: flex;
+            flex-direction: column;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            from { opacity: 0; transform: scale(0.8) translateY(20px); }
+            to { opacity: 1; transform: scale(1) translateY(0); }
+        }
+
+        .message.bot {
+            align-self: flex-start;
+        }
+
+        .message.user {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .bubble {
+            padding: 15px 20px;
+            border-radius: 15px;
+            border: var(--border-thick);
+            box-shadow: var(--shadow-hard);
+            position: relative;
+            font-size: 1.1rem;
+            line-height: 1.5;
+            word-wrap: break-word;
+        }
+
+        .message.bot .bubble {
+            background-color: var(--light-color);
+            border-bottom-left-radius: 2px;
+        }
+
+        .message.user .bubble {
+            background-color: var(--primary-color);
+            border-bottom-right-radius: 2px;
+        }
+
+        .bubble strong {
+            font-family: var(--font-heading);
+            font-size: 1.2rem;
+            letter-spacing: 0.5px;
+        }
+
+        .timestamp {
+            font-size: 0.8rem;
+            color: #666;
+            margin-top: 5px;
+            font-weight: 700;
+        }
+
+        /* --- Typing Indicator --- */
+        .typing-indicator {
+            display: none;
+            align-self: flex-start;
+            background: var(--light-color);
+            padding: 10px 15px;
+            border: var(--border-thick);
+            border-radius: 15px;
+            border-bottom-left-radius: 2px;
+            box-shadow: var(--shadow-hard);
+            margin-bottom: 10px;
+        }
+
+        .dots {
+            display: flex;
+            gap: 5px;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background-color: var(--dark-color);
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        /* --- Input Area --- */
+        .chat-input-area {
+            background-color: var(--light-color);
+            padding: 15px 20px;
+            border-top: var(--border-thick);
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            flex-shrink: 0; /* Mencegah input area mengecil */
+        }
+
+        .input-wrapper {
+            flex: 1;
+            position: relative;
+        }
+
+        #user-input {
+            width: 100%;
+            padding: 15px;
+            font-family: var(--font-body);
+            font-size: 1.1rem;
+            border: var(--border-thick);
+            border-radius: 30px;
+            outline: none;
+            background-color: var(--bg-pattern);
+            transition: all 0.2s;
+        }
+
+        #user-input:focus {
+            background-color: #fff;
+            box-shadow: 0 0 0 3px rgba(77, 150, 255, 0.3);
+        }
+
+        /* PERBAIKAN: Tambahkan style untuk tombol */
+        #send-btn {
+            width: 50px;
+            height: 50px;
+            background-color: var(--accent-color);
+            color: white;
+            border: var(--border-thick);
+            border-radius: 50%;
+            font-size: 1.2rem;
+            cursor: pointer;
+            box-shadow: var(--shadow-hard);
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-shrink: 0;
+        }
+
+        #send-btn:hover {
+            transform: translate(-2px, -2px);
+            box-shadow: var(--shadow-hover);
+            background-color: #3b82f6;
+        }
+
+        #send-btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 2px 2px 0px var(--dark-color);
+        }
+
+        /* --- Responsif Mobile --- */
+        @media (max-width: 600px) {
+            .bot-info h1 { font-size: 1.4rem; }
+            .bot-avatar { width: 50px; height: 50px; }
+            .message { max-width: 90%; }
+            #chat-container { padding: 15px; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Header Chatbot -->
+    <header>
+        <div class="bot-profile">
+            <div class="bot-avatar">
+                <img src="https://picsum.photos/seed/robotface/100/100" alt="Bot Avatar">
+                <div class="status-indicator"></div>
+            </div>
+            <div class="bot-info">
+                <h1>KOMIK-BOT</h1>
+                <p>Online & Siap Membantu!</p>
+            </div>
+        </div>
+        <div class="header-actions">
+            <button title="Hapus Chat" onclick="clearChat()"><i class="fas fa-trash-alt"></i></button>
+            <button title="Info"><i class="fas fa-info-circle"></i></button>
+        </div>
+    </header>
+
+    <!-- Area Chat -->
+    <main id="chat-container">
+        <!-- Pesan Pembuka Bot -->
+        <div class="message bot">
+            <div class="bubble">
+                <strong>Halo Sobat Kreatif!</strong> <br>
+                Saya adalah KOMIK-BOT, asisten virtual paling seru di dunia maya. Ada yang bisa saya bantu hari ini? 🎨✨
+            </div>
+            <span class="timestamp">Sekarang</span>
+        </div>
+        
+        <!-- Tempat indikator mengetik akan muncul secara dinamis via JS -->
+    </main>
+
+    <!-- Indikator Mengetik (Dipindahkan ke dalam main atau tetap di luar tapi diatur z-index) -->
+    <!-- Kita letakkan di luar main agar fixed di bawah chat container -->
+    <div class="typing-indicator" id="typing-indicator">
+        <div class="dots">
+            <div class="dot"></div>
+            <div class="dot"></div>
+            <div class="dot"></div>
+        </div>
+    </div>
+
+    <!-- Input Pengguna -->
+    <footer class="chat-input-area">
+        <div class="input-wrapper">
+            <!-- Input text biasa, bukan di dalam form -->
+            <input type="text" id="user-input" placeholder="Ketik pesan di sini..." autocomplete="off">
+        </div>
+        <!-- PERBAIKAN UTAMA: Tambahkan type="button" agar tidak me-reload halaman -->
+        <button id="send-btn" type="button" onclick="sendMessage()">
+            <i class="fas fa-paper-plane"></i>
+        </button>
+    </footer>
+
+    <!-- PERBAIKAN: Pindahkan script ke paling bawah body -->
+    <script>
+        // Pastikan elemen-elemen ada sebelum script dijalankan
+        document.addEventListener('DOMContentLoaded', () => {
+            const chatContainer = document.getElementById('chat-container');
+            const userInput = document.getElementById('user-input');
+            const typingIndicator = document.getElementById('typing-indicator');
+            
+            // Pastikan indikator mengetik ada di dalam chat container agar ikut scroll
+            // Kita pindahkan indikator ke dalam container via JS agar lebih rapi
+            chatContainer.appendChild(typingIndicator);
+
+            // Fokus otomatis
+            userInput.focus();
+
+            // Event Listener Keyboard (Enter)
+            userInput.addEventListener('keypress', function (e) {
+                if (e.key === 'Enter') {
+                    sendMessage();
+                }
+            });
+
+            // Fungsi Mendapatkan Waktu
+            function getCurrentTime() {
+                const now = new Date();
+                return now.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            // Fungsi Utama Mengirim Pesan
+            window.sendMessage = function() {
+                const text = userInput.value.trim();
+                if (text === "") return;
+
+                // 1. Tampilkan Pesan User
+                addMessage(text, 'user');
+                userInput.value = '';
+                userInput.focus(); // Kembalikan fokus ke input
+
+                // 2. Tampilkan Typing Indicator
+                showTyping();
+
+                // 3. Simulasi AI Berpikir (Delay 1-2 detik)
+                const delay = Math.random() * 1000 + 1000; 
+                setTimeout(() => {
+                    const botResponse = generateBotResponse(text);
+                    hideTyping();
+                    addMessage(botResponse, 'bot');
+                }, delay);
+            }
+
+            // Fungsi Menambah Pesan ke Layar
+            function addMessage(text, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.classList.add('message', sender);
+                
+                // Ganti \n dengan <br>
+                const formattedText = text.replace(/\n/g, '<br>');
+
+                messageDiv.innerHTML = `
+                    <div class="bubble">${formattedText}</div>
+                    <span class="timestamp">${getCurrentTime()}</span>
+                `;
+
+                // Masukkan sebelum indikator mengetik
+                chatContainer.insertBefore(messageDiv, typingIndicator);
+                scrollToBottom();
+            }
+
+            // Logika Bot
+            function generateBotResponse(input) {
+                const lowerInput = input.toLowerCase();
+
+                if (lowerInput.includes('halo') || lowerInput.includes('hi') || lowerInput.includes('hai')) {
+                    return "Hai! Senang bertemu denganmu! Gimana kabar proyek kreatifmu?";
+                } 
+                else if (lowerInput.includes('siapa') && lowerInput.includes('kamu')) {
+                    return "Saya adalah <strong>KOMIK-BOT</strong>! Dibuat dengan kode, kopi, dan sedikit sihir komik. 🤖";
+                }
+                else if (lowerInput.includes('bisa') && lowerInput.includes('bantu')) {
+                    return "Tentu saja! Saya bisa bantu brainstorming ide, mencari inspirasi warna, atau sekadar bercanda. Mau mulai dari mana?";
+                }
+                else if (lowerInput.includes('terima kasih') || lowerInput.includes('makasih')) {
+                    return "Sama-sama! Senang bisa membantu! Jangan lupa istirahat ya! ☕";
+                }
+                else if (lowerInput.includes('warna')) {
+                    return "Kombinasi warna favorit saya adalah Kuning & Merah, menciptakan energi yang <strong>WOW!</strong> Coba deh!";
+                }
+                else if (lowerInput.includes('jasa') || lowerInput.includes('harga')) {
+                    return "Saya siaga 24/7 dan gratis! Tapi kalau butuh desainer manusia yang beneran, mungkin bisa cek portofolio pemilik saya dulu. 😉";
+                }
+                else if (lowerInput.includes('capek') || lowerInput.includes('lelah')) {
+                    return "Aduh, istirahat sejenak dong! Minum air putih atau lihat meme kucing biar semangat lagi. 😺";
+                }
+                else {
+                    const randomReplies = [
+                        "Wah, menarik sekali! Ceritakan lebih lanjut.",
+                        "Hmm, itu ide yang brilian! 👍",
+                        "Saya belum terlalu paham itu, tapi kedengarannya keren!",
+                        "Boooom! 💥 Apakah ada hal lain yang ingin kamu diskusikan?",
+                        "Kode saya mendeteksi aura kreativitas yang tinggi darimu!"
+                    ];
+                    return randomReplies[Math.floor(Math.random() * randomReplies.length)];
+                }
+            }
+
+            function showTyping() {
+                typingIndicator.style.display = 'flex';
+                scrollToBottom();
+            }
+
+            function hideTyping() {
+                typingIndicator.style.display = 'none';
+            }
+
+            function scrollToBottom() {
+                chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+
+            window.clearChat = function() {
+                if(confirm("Yakin ingin menghapus semua riwayat chat?")) {
+                    // Hapus semua message kecuali indicator
+                    const messages = document.querySelectorAll('.message');
+                    messages.forEach(msg => msg.remove());
+                    
+                    // Tambah pesan pembuka
+                    addMessage("Chat sudah dibersihkan! Mari mulai fresh. ✨", 'bot');
+                }
+            }
+        });
+    </script>
+</body>
+</html>
