@@ -43,6 +43,7 @@
             background-color: var(--bg-pattern);
             color: var(--dark-color);
             height: 100vh;
+            height: 100dvh; /* Dynamic viewport height untuk mobile */
             display: flex;
             flex-direction: column;
             background-image: radial-gradient(var(--dark-color) 1px, transparent 1px);
@@ -250,6 +251,8 @@
         .chat-input-area {
             background-color: var(--light-color);
             padding: 15px 20px;
+            /* Tambahkan padding bawah untuk area aman navigasi mobile */
+            padding-bottom: calc(15px + env(safe-area-inset-bottom));
             border-top: var(--border-thick);
             display: flex;
             gap: 15px;
