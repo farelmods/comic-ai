@@ -402,7 +402,7 @@
             }
 
             // Fungsi Utama Mengirim Pesan
-            window.sendMessage = function() {
+            window.sendMessage = async function() {
                 const text = userInput.value.trim();
                 if (text === "") return;
 
@@ -414,13 +414,24 @@
                 // 2. Tampilkan Typing Indicator
                 showTyping();
 
-                // 3. Simulasi AI Berpikir (Delay 1-2 detik)
-                const delay = Math.random() * 1000 + 1000; 
-                setTimeout(() => {
-                    const botResponse = generateBotResponse(text);
+                try {
+                    // Setting sifat AI: Seru dan sangat peka terhadap komik
+                    const personality = "Kamu adalah AI yang seru dan sangat peka terhadap komik, kamu tahu segalanya tentang komik. Jawablah pesan berikut dengan gaya yang sangat seru, asik, dan ekspresif: ";
+
+                    const response = await fetch(`https://api.sansekai.my.id/api/ai/chatgpt?prompt=${encodeURIComponent(personality + text)}`);
+                    const data = await response.json();
+
                     hideTyping();
+
+                    // Mengambil respon dari data (umumnya Sansekai menggunakan 'result' atau 'data')
+                    const botResponse = data.result || data.data || data.reply || (data.message && data.message !== "IP Anda telah diblacklist..." ? data.message : null) || "Waduh, AI-nya lagi malu-malu nih. Coba tanya lagi ya! 😅";
+
                     addMessage(botResponse, 'bot');
-                }, delay);
+                } catch (error) {
+                    console.error("Error:", error);
+                    hideTyping();
+                    addMessage("Aduh! Sepertinya ada gangguan sinyal di markas komik nih. Coba lagi ya, Sobat! 🚀", 'bot');
+                }
             }
 
             // Fungsi Menambah Pesan ke Layar
@@ -428,8 +439,11 @@
                 const messageDiv = document.createElement('div');
                 messageDiv.classList.add('message', sender);
                 
-                // Ganti \n dengan <br>
-                const formattedText = text.replace(/\n/g, '<br>');
+                // Ganti \n dengan <br> dan dukung sedikit markdown sederhana jika perlu
+                let formattedText = text.replace(/\n/g, '<br>');
+
+                // Bold sederhana (**teks**)
+                formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 
                 messageDiv.innerHTML = `
                     <div class="bubble">${formattedText}</div>
@@ -439,43 +453,6 @@
                 // Masukkan sebelum indikator mengetik
                 chatContainer.insertBefore(messageDiv, typingIndicator);
                 scrollToBottom();
-            }
-
-            // Logika Bot
-            function generateBotResponse(input) {
-                const lowerInput = input.toLowerCase();
-
-                if (lowerInput.includes('halo') || lowerInput.includes('hi') || lowerInput.includes('hai')) {
-                    return "Hai! Senang bertemu denganmu! Gimana kabar proyek kreatifmu?";
-                } 
-                else if (lowerInput.includes('siapa') && lowerInput.includes('kamu')) {
-                    return "Saya adalah <strong>KOMIK-BOT</strong>! Dibuat dengan kode, kopi, dan sedikit sihir komik. 🤖";
-                }
-                else if (lowerInput.includes('bisa') && lowerInput.includes('bantu')) {
-                    return "Tentu saja! Saya bisa bantu brainstorming ide, mencari inspirasi warna, atau sekadar bercanda. Mau mulai dari mana?";
-                }
-                else if (lowerInput.includes('terima kasih') || lowerInput.includes('makasih')) {
-                    return "Sama-sama! Senang bisa membantu! Jangan lupa istirahat ya! ☕";
-                }
-                else if (lowerInput.includes('warna')) {
-                    return "Kombinasi warna favorit saya adalah Kuning & Merah, menciptakan energi yang <strong>WOW!</strong> Coba deh!";
-                }
-                else if (lowerInput.includes('jasa') || lowerInput.includes('harga')) {
-                    return "Saya siaga 24/7 dan gratis! Tapi kalau butuh desainer manusia yang beneran, mungkin bisa cek portofolio pemilik saya dulu. 😉";
-                }
-                else if (lowerInput.includes('capek') || lowerInput.includes('lelah')) {
-                    return "Aduh, istirahat sejenak dong! Minum air putih atau lihat meme kucing biar semangat lagi. 😺";
-                }
-                else {
-                    const randomReplies = [
-                        "Wah, menarik sekali! Ceritakan lebih lanjut.",
-                        "Hmm, itu ide yang brilian! 👍",
-                        "Saya belum terlalu paham itu, tapi kedengarannya keren!",
-                        "Boooom! 💥 Apakah ada hal lain yang ingin kamu diskusikan?",
-                        "Kode saya mendeteksi aura kreativitas yang tinggi darimu!"
-                    ];
-                    return randomReplies[Math.floor(Math.random() * randomReplies.length)];
-                }
             }
 
             function showTyping() {
@@ -488,7 +465,10 @@
             }
 
             function scrollToBottom() {
-                chatContainer.scrollTop = chatContainer.scrollHeight;
+                // Gunakan requestAnimationFrame atau setTimeout untuk memastikan DOM sudah dirender
+                requestAnimationFrame(() => {
+                    chatContainer.scrollTop = chatContainer.scrollHeight;
+                });
             }
 
             window.clearChat = function() {
