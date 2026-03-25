@@ -419,35 +419,18 @@
 
                 try {
                     // Setting sifat AI: Seru dan sangat peka terhadap komik
-                    const systemPrompt = "Kamu adalah AI yang seru dan sangat peka terhadap komik, kamu tahu segalanya tentang komik. Jawablah pesan dengan gaya yang sangat seru, asik, dan ekspresif.";
+                    const personality = "Kamu adalah AI yang seru dan sangat peka terhadap komik, kamu tahu segalanya tentang komik. Jawablah pesan berikut dengan gaya yang sangat seru, asik, dan ekspresif: ";
 
-                    // Menggunakan POST agar lebih cepat dan mendukung prompt panjang jika didukung API
-                    const response = await fetch('https://api.siputzx.my.id/api/ai/gptoss120b', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json'
-                        },
-                        body: JSON.stringify({
-                            prompt: text,
-                            system: systemPrompt,
-                            temperature: 0.7
-                        })
-                    });
+                    // Gunakan API Sansekai sesuai request user
+                    const url = `https://api.sansekai.my.id/api/ai/chatgpt?prompt=${encodeURIComponent(personality + text)}`;
 
-                    // Fallback ke GET jika POST tidak didukung atau error
-                    let data;
-                    if (response.ok) {
-                        data = await response.json();
-                    } else {
-                        const getUrl = `https://api.siputzx.my.id/api/ai/gptoss120b?prompt=${encodeURIComponent(text)}&system=${encodeURIComponent(systemPrompt)}&temperature=0.7`;
-                        const getRes = await fetch(getUrl);
-                        data = await getRes.json();
-                    }
+                    const response = await fetch(url);
+                    const data = await response.json();
 
                     hideTyping();
 
-                    // Mengambil respon dari data (berdasarkan API Siputzx umumnya 'data' atau 'result')
-                    const botResponse = data.data || data.result || data.content || data.reply || "Waduh, AI-nya lagi malu-malu nih. Coba tanya lagi ya! 😅";
+                    // Parsing respon (Sansekai biasanya di 'result' atau 'data')
+                    const botResponse = data.result || data.data || data.reply || (data.message && data.message !== "IP Anda telah diblacklist..." ? data.message : null) || "Waduh, AI-nya lagi malu-malu nih. Coba tanya lagi ya! 😅";
 
                     addMessage(botResponse, 'bot');
                 } catch (error) {
