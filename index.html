@@ -419,15 +419,35 @@
 
                 try {
                     // Setting sifat AI: Seru dan sangat peka terhadap komik
-                    const personality = "Kamu adalah AI yang seru dan sangat peka terhadap komik, kamu tahu segalanya tentang komik. Jawablah pesan berikut dengan gaya yang sangat seru, asik, dan ekspresif: ";
+                    const systemPrompt = "Kamu adalah AI yang seru dan sangat peka terhadap komik, kamu tahu segalanya tentang komik. Jawablah pesan dengan gaya yang sangat seru, asik, dan ekspresif.";
 
-                    const response = await fetch(`https://api.sansekai.my.id/api/ai/chatgpt?prompt=${encodeURIComponent(personality + text)}`);
-                    const data = await response.json();
+                    // Menggunakan POST agar lebih cepat dan mendukung prompt panjang jika didukung API
+                    const response = await fetch('https://api.siputzx.my.id/api/ai/gptoss120b', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            prompt: text,
+                            system: systemPrompt,
+                            temperature: 0.7
+                        })
+                    });
+
+                    // Fallback ke GET jika POST tidak didukung atau error
+                    let data;
+                    if (response.ok) {
+                        data = await response.json();
+                    } else {
+                        const getUrl = `https://api.siputzx.my.id/api/ai/gptoss120b?prompt=${encodeURIComponent(text)}&system=${encodeURIComponent(systemPrompt)}&temperature=0.7`;
+                        const getRes = await fetch(getUrl);
+                        data = await getRes.json();
+                    }
 
                     hideTyping();
 
-                    // Mengambil respon dari data (umumnya Sansekai menggunakan 'result' atau 'data')
-                    const botResponse = data.result || data.data || data.reply || (data.message && data.message !== "IP Anda telah diblacklist..." ? data.message : null) || "Waduh, AI-nya lagi malu-malu nih. Coba tanya lagi ya! 😅";
+                    // Mengambil respon dari data (berdasarkan API Siputzx umumnya 'data' atau 'result')
+                    const botResponse = data.data || data.result || data.content || data.reply || "Waduh, AI-nya lagi malu-malu nih. Coba tanya lagi ya! 😅";
 
                     addMessage(botResponse, 'bot');
                 } catch (error) {
@@ -437,21 +457,42 @@
                 }
             }
 
-            // Fungsi Menambah Pesan ke Layar
+            // Fungsi Menambah Pesan ke Layar (Ditingkatkan Keamanannya dari XSS)
             function addMessage(text, sender) {
                 const messageDiv = document.createElement('div');
                 messageDiv.classList.add('message', sender);
                 
-                // Ganti \n dengan <br> dan dukung sedikit markdown sederhana jika perlu
-                let formattedText = text.replace(/\n/g, '<br>');
+                const bubble = document.createElement('div');
+                bubble.classList.add('bubble');
 
-                // Bold sederhana (**teks**)
-                formattedText = formattedText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                // Render markdown sederhana secara aman
+                // 1. Pisahkan berdasarkan baris baru
+                const lines = text.split('\n');
+                lines.forEach((line, index) => {
+                    // 2. Proses bold (**teks**)
+                    const parts = line.split(/(\*\*.*?\*\*)/g);
+                    parts.forEach(part => {
+                        if (part.startsWith('**') && part.endsWith('**')) {
+                            const bold = document.createElement('strong');
+                            bold.textContent = part.slice(2, -2);
+                            bubble.appendChild(bold);
+                        } else {
+                            bubble.appendChild(document.createTextNode(part));
+                        }
+                    });
 
-                messageDiv.innerHTML = `
-                    <div class="bubble">${formattedText}</div>
-                    <span class="timestamp">${getCurrentTime()}</span>
-                `;
+                    // Tambahkan <br> jika bukan baris terakhir
+                    if (index < lines.length - 1) {
+                        bubble.appendChild(document.createElement('br'));
+                    }
+                });
+
+                const timestamp = document.createElement('span');
+                timestamp.classList.add('timestamp');
+                timestamp.textContent = getCurrentTime();
+
+                messageDiv.appendChild(bubble);
+                messageDiv.appendChild(timestamp);
 
                 // Masukkan sebelum indikator mengetik
                 chatContainer.insertBefore(messageDiv, typingIndicator);
